@@ -1,8 +1,6 @@
-package edu.indiana.d2i.flink;
+package edu.indiana.d2i.flink.queued;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import edu.indiana.d2i.flink.utils.GlobalReducer;
-import edu.indiana.d2i.flink.utils.LocalReducer;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -15,7 +13,7 @@ import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 
 import java.util.Properties;
 
-public class ProvStreamConsumerState {
+public class LocalProvStreamConsumer {
 
     public static void main(String[] args) throws Exception {
         // create execution environment
@@ -53,12 +51,6 @@ public class ProvStreamConsumerState {
                 .keyBy(0)
                 .process(new LocalReducer())
                 .addSink(new FlinkKafkaProducer09<String>("mr-prov-reduced", new SimpleStringSchema(), producerProperties));
-
-
-
-//                .keyBy(0)
-//                .process(new GlobalReducer())
-//                .print();
 
         env.execute();
     }

@@ -1,6 +1,8 @@
-package edu.indiana.d2i.flink.utils;
+package edu.indiana.d2i.flink.queued;
 
 
+import edu.indiana.d2i.flink.utils.ProvEdge;
+import edu.indiana.d2i.flink.utils.ProvState;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.java.tuple.Tuple2;

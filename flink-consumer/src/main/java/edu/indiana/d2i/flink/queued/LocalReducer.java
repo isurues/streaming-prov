@@ -1,7 +1,9 @@
-package edu.indiana.d2i.flink.utils;
+package edu.indiana.d2i.flink.queued;
 
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import edu.indiana.d2i.flink.utils.ProvEdge;
+import edu.indiana.d2i.flink.utils.ProvState;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.java.tuple.Tuple2;
@@ -54,30 +56,6 @@ public class LocalReducer extends ProcessFunction<Tuple2<String, ObjectNode>, St
 
 
     }
-
-//    @Override
-//    public void processElement(Tuple2<String, ObjectNode> in, Context context,
-//                               Collector<Tuple2<String, ProvEdge>> out) throws Exception {
-//
-//        ProvState current = state.value();
-//        if (current == null) {
-//            current = new ProvState();
-//            current.key = in.f0;
-//        }
-//
-//        current.count++;
-//        current.processNotification(in.f1);
-//        state.update(current);
-//
-//        if (current.count % 11 == 0) {
-//            for (String key : current.edgesBySource.keySet()) {
-//                List<ProvEdge> edges = current.edgesBySource.get(key);
-//                for (ProvEdge e : edges)
-//                    out.collect(new Tuple2<>(in.f0, e));
-//            }
-//            current.clearState();
-//        }
-//    }
 
 //    @Override
 //    public void onTimer(long timestamp, OnTimerContext ctx, Collector<Tuple2<String, Long>> out)
