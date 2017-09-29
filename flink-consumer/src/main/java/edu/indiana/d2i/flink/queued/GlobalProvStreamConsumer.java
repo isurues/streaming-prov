@@ -7,7 +7,7 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer09;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010;
 import org.apache.flink.streaming.util.serialization.JSONDeserializationSchema;
 
 import java.util.Properties;
@@ -22,7 +22,7 @@ public class GlobalProvStreamConsumer {
         properties.setProperty("bootstrap.servers", "localhost:9092");
         properties.setProperty("group.id", "global_consumer");
 
-        DataStream<ObjectNode> stream = env.addSource(new FlinkKafkaConsumer09<>(
+        DataStream<ObjectNode> stream = env.addSource(new FlinkKafkaConsumer010<>(
                 "mr-prov-reduced", new JSONDeserializationSchema(), properties));
 
         DataStream<Tuple2<String, ProvEdge>> keyedStream = stream.map(
@@ -37,7 +37,7 @@ public class GlobalProvStreamConsumer {
 
         keyedStream
                 .keyBy(0)
-                .process(new GlobalReducer())
+//                .process(new GlobalReducer())
                 .print();
 
         env.execute();

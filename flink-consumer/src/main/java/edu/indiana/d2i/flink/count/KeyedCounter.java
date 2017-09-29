@@ -11,7 +11,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer09;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010;
 import org.apache.flink.streaming.util.serialization.JSONKeyValueDeserializationSchema;
 import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
 import org.apache.flink.util.Collector;
@@ -28,7 +28,7 @@ public class KeyedCounter {
         properties.setProperty("bootstrap.servers", "localhost:9092");
         properties.setProperty("group.id", "flink_consumer");
 
-//        DataStream<ObjectNode> stream = env.addSource(new FlinkKafkaConsumer09<>(
+//        DataStream<ObjectNode> stream = env.addSource(new FlinkKafkaConsumer010<>(
 //                "mr-prov", new JSONKeyValueDeserializationSchema(false), properties) );
 //
 //        DataStream<Tuple2<String, String>> tupleStream = stream.map(new MapFunction<ObjectNode, Tuple2<String, String>>() {
@@ -40,7 +40,7 @@ public class KeyedCounter {
 //            }
 //        });
 
-        DataStream<String> stream = env.addSource(new FlinkKafkaConsumer09<>(
+        DataStream<String> stream = env.addSource(new FlinkKafkaConsumer010<>(
                 "mr-prov", new SimpleStringSchema(), properties) );
 
         DataStream<Tuple2<String, String>> tupleStream = stream.map(new MapFunction<String, Tuple2<String, String>>() {

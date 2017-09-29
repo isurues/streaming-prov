@@ -39,6 +39,8 @@ public class ProvState {
     }
 
     public void clearState() {
+        count = 0;
+        lastModified = System.currentTimeMillis();
         edgesBySource = new HashMap<>();
         edgesByDest = new HashMap<>();
     }
@@ -51,27 +53,26 @@ public class ProvState {
 
     private void handleNewEdgeGroup(List<ProvEdge> newStreamEdges) {
         List<ProvEdge> edgesToDelete = new ArrayList<>();
+        List<ProvEdge> edgesToAdd = new ArrayList<>();
         for (ProvEdge newEdge : newStreamEdges) {
             if (edgesByDest.containsKey(newEdge.getSource())) {
                 // edges with current source as the destination
                 List<ProvEdge> edgesIntoSource = edgesByDest.get(newEdge.getSource());
-                List<ProvEdge> newEdges = new ArrayList<>();
                 for (ProvEdge e : edgesIntoSource)
-                    newEdges.add(new ProvEdge(e.getSource(), newEdge.getDestination()));
+                    edgesToAdd.add(new ProvEdge(e.getSource(), newEdge.getDestination()));
                 edgesToDelete.addAll(edgesIntoSource);
-                handleNewEdgeGroup(newEdges);
             } else if (edgesBySource.containsKey(newEdge.getDestination())) {
                 // edges with current source as the destination
                 List<ProvEdge> edgesFromDest = edgesBySource.get(newEdge.getDestination());
-                List<ProvEdge> newEdges = new ArrayList<>();
                 for (ProvEdge e : edgesFromDest)
-                    newEdges.add(new ProvEdge(newEdge.getSource(), e.getDestination()));
+                    edgesToAdd.add(new ProvEdge(newEdge.getSource(), e.getDestination()));
                 edgesToDelete.addAll(edgesFromDest);
-                handleNewEdgeGroup(newEdges);
             } else {
                 addEdge(newEdge);
             }
         }
+        if (!edgesToAdd.isEmpty())
+            handleNewEdgeGroup(edgesToAdd);
 
         for (ProvEdge e : edgesToDelete)
             deleteEdge(e);

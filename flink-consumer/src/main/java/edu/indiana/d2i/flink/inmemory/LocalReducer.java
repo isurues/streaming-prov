@@ -3,62 +3,93 @@ package edu.indiana.d2i.flink.inmemory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import edu.indiana.d2i.flink.utils.ProvEdge;
 import edu.indiana.d2i.flink.utils.ProvState;
-import org.apache.flink.api.common.state.ValueState;
-import org.apache.flink.api.common.state.ValueStateDescriptor;
-import org.apache.flink.api.java.tuple.Tuple2;
+import org.apache.flink.api.common.state.ListState;
+import org.apache.flink.api.common.state.ListStateDescriptor;
+import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.runtime.state.FunctionInitializationContext;
+import org.apache.flink.runtime.state.FunctionSnapshotContext;
+import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction;
 import org.apache.flink.streaming.api.functions.ProcessFunction;
 import org.apache.flink.util.Collector;
 
 import java.util.List;
 
-public class LocalReducer extends ProcessFunction<Tuple2<String, ObjectNode>, Tuple2<String, ProvEdge>> {
+public class LocalReducer
+        extends ProcessFunction<ObjectNode, ProvEdge>
+        implements CheckpointedFunction {
 
-    private ValueState<ProvState> state;
+    private transient ListState<ProvState> listState;
 
     @Override
-    public void open(Configuration parameters) throws Exception {
-        state = getRuntimeContext().getState(new ValueStateDescriptor<>("localState", ProvState.class));
+    public void snapshotState(FunctionSnapshotContext functionSnapshotContext) throws Exception {
+        listState.clear();
+        // TODO
     }
 
     @Override
-    public void processElement(Tuple2<String, ObjectNode> in, Context context,
-                               Collector<Tuple2<String, ProvEdge>> out) throws Exception {
+    public void initializeState(FunctionInitializationContext context) throws Exception {
+        ListStateDescriptor<ProvState> descriptor =
+                new ListStateDescriptor<>("local-state",
+                        TypeInformation.of(new TypeHint<ProvState>() {}));
 
-        ProvState current = state.value();
-        if (current == null) {
-            current = new ProvState();
-            current.key = in.f0;
-        }
+        listState = context.getOperatorStateStore().getListState(descriptor);
+        listState.add(new ProvState());
 
+        // TODO
+//        if (context.isRestored()) {
+//        }
+
+        System.out.println("local operator state initialized. task = " + getRuntimeContext().getTaskNameWithSubtasks());
+    }
+
+    @Override
+    public void open(Configuration parameters) throws Exception {
+        System.out.println("local reducer open. task = " + getRuntimeContext().getTaskNameWithSubtasks());
+    }
+
+    @Override
+    public void processElement(ObjectNode in, Context context,
+                               Collector<ProvEdge> out) throws Exception {
+        System.out.println(getRuntimeContext().getTaskNameWithSubtasks() + ", " + getRuntimeContext().getIndexOfThisSubtask() + " : " + in.toString());
+
+        ProvState current = listState.get().iterator().next();
         current.count++;
-        current.processNotification(in.f1);
-        state.update(current);
+        current.lastModified = System.currentTimeMillis();
+        current.processNotification(in);
 
-        if (current.count % 11 == 0) {
+//        if (current.count % 11 == 0) {
+//            for (String key : current.edgesBySource.keySet()) {
+//                List<ProvEdge> edges = current.edgesBySource.get(key);
+//                for (ProvEdge e : edges)
+//                    out.collect(new Tuple2<>(in.f0, e));
+//            }
+//            current.clearState();
+//        }
+
+        context.timerService().registerProcessingTimeTimer(current.lastModified + 500);
+    }
+
+    @Override
+    public void onTimer(long timestamp, OnTimerContext ctx, Collector<ProvEdge> out)
+            throws Exception {
+
+        // get the state for the key that scheduled the timer
+        ProvState current = listState.get().iterator().next();
+
+        // check if this is an outdated timer or the latest timer
+        if (timestamp == current.lastModified + 500) {
+            System.out.println("emitting local results...");
             for (String key : current.edgesBySource.keySet()) {
                 List<ProvEdge> edges = current.edgesBySource.get(key);
-                for (ProvEdge e : edges)
-                    out.collect(new Tuple2<>(in.f0, e));
+                for (ProvEdge e : edges) {
+                    out.collect(e);
+                }
             }
             current.clearState();
         }
     }
 
-//    @Override
-//    public void onTimer(long timestamp, OnTimerContext ctx, Collector<Tuple2<String, Long>> out)
-//            throws Exception {
-//
-//        System.out.println("onTimer invoked..");
-//
-//        // get the state for the key that scheduled the timer
-//        ProvState result = state.value();
-//
-//        // check if this is an outdated timer or the latest timer
-//        if (timestamp == result.lastModified + 5000) {
-//            // emit the state on timeout
-//            out.collect(new Tuple2<String, Long>(result.key, result.count));
-//        }
-//    }
 
 }
