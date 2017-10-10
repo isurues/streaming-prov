@@ -9,6 +9,8 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer010;
 import org.apache.flink.streaming.util.serialization.JSONDeserializationSchema;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Properties;
 
 public class KeyedProvStreamConsumer {
@@ -18,12 +20,17 @@ public class KeyedProvStreamConsumer {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         env.setParallelism(3);
 
+        Properties fileProps = loadPropertiesFromFile();
+        System.out.println("###@@ kafka properties loaded: " + fileProps.getProperty("bootstrap.servers"));
+
         Properties properties = new Properties();
-        properties.setProperty("bootstrap.servers", "localhost:9092");
+//        properties.setProperty("bootstrap.servers", "localhost:9092");
+        properties.setProperty("bootstrap.servers", fileProps.getProperty("bootstrap.servers"));
         properties.setProperty("group.id", "local_consumer");
 
         DataStream<ObjectNode> stream = env.addSource(new FlinkKafkaConsumer010<>(
-                "k10-mr-prov-p3", new JSONDeserializationSchema(), properties));
+                fileProps.getProperty("kafka.topic"), new JSONDeserializationSchema(), properties));
+//                "mr-prov", new JSONDeserializationSchema(), properties));
 
         DataStream<ObjectNode> filteredStream = stream.filter(new FilterFunction<ObjectNode>() {
             @Override
@@ -48,9 +55,25 @@ public class KeyedProvStreamConsumer {
                 .process(new KeyedLocalReducer())
                 .keyBy(0)
                 .process(new KeyedGlobalReducer()).setParallelism(1)
-                .print();
+                .writeAsText(fileProps.getProperty("output.file.path")).setParallelism(1);
+
+        // how to write to an hdfs file
+        // .writeAsText("hdfs://nnHost:nnPort/flink-out/out1");
+
+//                .print();
 
         env.execute();
+    }
+
+    private static Properties loadPropertiesFromFile() {
+        Properties properties = new Properties();
+        try {
+//            properties.load(new FileInputStream("/home/isurues/flink/kafka.properties"));
+            properties.load(new FileInputStream("/Users/isuru/research/streaming-prov/flink-consumer/kafka.properties"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return properties;
     }
 
 }

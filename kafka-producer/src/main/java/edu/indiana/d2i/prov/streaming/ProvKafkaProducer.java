@@ -59,8 +59,8 @@ public class ProvKafkaProducer {
     private void loadPropertiesFromFile() {
         producerProperties = new Properties();
         try {
-            producerProperties.load(new FileInputStream("/home/isurues/hadoop/kafka.properties"));
-//            producerProperties.load(new FileInputStream("/Users/isuru/research/streaming-prov/kafka-producer/kafka.properties"));
+//            producerProperties.load(new FileInputStream("/home/isurues/hadoop/kafka.properties"));
+            producerProperties.load(new FileInputStream("/Users/isuru/research/streaming-prov/kafka-producer/kafka.properties"));
         } catch (IOException e) {
             e.printStackTrace();
         }
