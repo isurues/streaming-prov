@@ -37,7 +37,10 @@ public class HashCountProvKafka {
                 ProvKafkaProducer kafkaProducer = ProvKafkaProducer.getInstance();
                 int partition = ProvKafkaProducer.getPartitionToWrite();
                 if (partition < 0)
-                    partition = count++ % ProvKafkaProducer.getNumberOfPartitions();
+                    if ("horizontal".equals(ProvKafkaProducer.getPartitionStrategy()))
+                        partition = 0;
+                    else
+                        partition = count++ % ProvKafkaProducer.getNumberOfPartitions();
                 kafkaProducer.createAndSendEdge(invocationId, inputId, "used", partition);
 
                 StringTokenizer itr = new StringTokenizer(value.toString());
@@ -73,7 +76,10 @@ public class HashCountProvKafka {
 
             int partition = ProvKafkaProducer.getPartitionToWrite();
             if (partition < 0)
-                partition = count++ % ProvKafkaProducer.getNumberOfPartitions();
+                if ("horizontal".equals(ProvKafkaProducer.getPartitionStrategy()))
+                    partition = reduceId.contains("_m_") ? 1 : 2;
+                else
+                    partition = count++ % ProvKafkaProducer.getNumberOfPartitions();
 
             List<String> nots = new ArrayList<>();
             ProvKafkaProducer kafkaProducer = ProvKafkaProducer.getInstance();

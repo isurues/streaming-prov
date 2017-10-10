@@ -1,7 +1,5 @@
 package edu.indiana.d2i.prov.streaming;
 
-import org.apache.htrace.fasterxml.jackson.databind.JsonNode;
-import org.apache.htrace.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -18,6 +16,7 @@ public class ProvKafkaProducer {
     private Producer<String, String> kafkaProducer;
     //    private Producer<String, JsonNode> kafkaProducer;
     private static String kafkaTopic;
+    private static String partitionStrategy;
     //    private static final String kafkaTopic = "mr-prov";
     private static Properties producerProperties;
     private static int numberOfPartitions;
@@ -26,6 +25,7 @@ public class ProvKafkaProducer {
     private ProvKafkaProducer() {
         loadPropertiesFromFile();
         kafkaTopic = producerProperties.getProperty("kafka.topic");
+        partitionStrategy = producerProperties.getProperty("partition.strategy");
         partitionToWrite = Integer.parseInt(producerProperties.getProperty("partition.to.write"));
         numberOfPartitions = Integer.parseInt(producerProperties.getProperty("number.of.partitions"));
         System.out.println("#### properties read, partition to write = " + partitionToWrite);
@@ -54,6 +54,10 @@ public class ProvKafkaProducer {
 
     public static int getPartitionToWrite() {
         return partitionToWrite;
+    }
+
+    public static String getPartitionStrategy() {
+        return partitionStrategy;
     }
 
     private void loadPropertiesFromFile() {
