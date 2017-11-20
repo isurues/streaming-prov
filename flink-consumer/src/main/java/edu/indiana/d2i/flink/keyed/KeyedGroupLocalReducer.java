@@ -12,7 +12,7 @@ import org.apache.flink.util.Collector;
 
 import java.util.List;
 
-public class KeyedLocalReducer extends ProcessFunction<Tuple2<String, ObjectNode>, Tuple2<String, ProvEdge>> {
+public class KeyedGroupLocalReducer extends ProcessFunction<Tuple2<String, ObjectNode>, Tuple2<String, List<ProvEdge>>> {
 
     private ValueState<ProvState> state;
     private static final int LOCAL_LIMIT = Integer.parseInt(KeyedProvStreamConsumer.fileProps.getProperty("local.limit"));
@@ -21,16 +21,14 @@ public class KeyedLocalReducer extends ProcessFunction<Tuple2<String, ObjectNode
     @Override
     public void open(Configuration parameters) throws Exception {
         state = getRuntimeContext().getState(new ValueStateDescriptor<>("local-state", ProvState.class));
+        System.out.println("@@@ local limit = " + LOCAL_LIMIT);
         System.out.println("@@@ local timer interval = " + TIMER_INTERVAL_MS);
-        System.out.println("local reducer open. task = " + getRuntimeContext().getTaskNameWithSubtasks());
+        System.out.println("grouped local reducer open. task = " + getRuntimeContext().getTaskNameWithSubtasks());
     }
 
     @Override
     public void processElement(Tuple2<String, ObjectNode> in, Context context,
-                               Collector<Tuple2<String, ProvEdge>> out) throws Exception {
-//        System.out.println(getRuntimeContext().getTaskNameWithSubtasks() + ", " +
-//                getRuntimeContext().getIndexOfThisSubtask() + " : " + in.f1.toString());
-
+                               Collector<Tuple2<String, List<ProvEdge>>> out) throws Exception {
         ProvState current = state.value();
         if (current == null) {
             current = new ProvState();
@@ -42,8 +40,8 @@ public class KeyedLocalReducer extends ProcessFunction<Tuple2<String, ObjectNode
         state.update(current);
         // emit on count, may be experiment with a time period too?
         if (current.count == LOCAL_LIMIT) {
-            System.out.println(current.key + ": count: emitting local results...");
-            emitState(current, out);
+            System.out.println(current.key + ": count: emitting grouped local results...");
+            emitGroupedState(current, out);
         }
 
         current.lastModified = System.currentTimeMillis();
@@ -51,37 +49,21 @@ public class KeyedLocalReducer extends ProcessFunction<Tuple2<String, ObjectNode
     }
 
     @Override
-    public void onTimer(long timestamp, OnTimerContext ctx, Collector<Tuple2<String, ProvEdge>> out)
+    public void onTimer(long timestamp, OnTimerContext ctx, Collector<Tuple2<String, List<ProvEdge>>> out)
             throws Exception {
         // get the state for the key that scheduled the timer
         ProvState current = state.value();
         // check if this is an outdated timer or the latest timer
         if (timestamp == current.lastModified + TIMER_INTERVAL_MS) {
-            System.out.println(current.key + ": timer: emitting local results...");
-            emitState(current, out);
+            System.out.println(current.key + ": timer: emitting grouped local results...");
+            emitGroupedState(current, out);
         }
     }
 
-    private void emitState(ProvState current, Collector<Tuple2<String, ProvEdge>> out) {
-        for (String key : current.edgesBySource.keySet()) {
-            List<ProvEdge> edges = current.edgesBySource.get(key);
-            for (ProvEdge e : edges) {
-//                if (e.toString().contains("2811"))
-//                    System.out.println(getRuntimeContext().getIndexOfThisSubtask() + ":2811 local ---> " + e.toJSONString());
-                out.collect(new Tuple2<>("global", e));
-            }
-        }
-        current.clearState();
-    }
-
-    private void emitGroupedState(ProvState current, Collector<Tuple2<String, ProvEdge>> out) {
-        for (String key : current.edgesBySource.keySet()) {
-            List<ProvEdge> edges = current.edgesBySource.get(key);
-            for (ProvEdge e : edges) {
-//                if (e.toString().contains("2811"))
-//                    System.out.println(getRuntimeContext().getIndexOfThisSubtask() + ":2811 local ---> " + e.toJSONString());
-                out.collect(new Tuple2<>("global", e));
-            }
+    private void emitGroupedState(ProvState current, Collector<Tuple2<String, List<ProvEdge>>> out) {
+        for (String key : current.edgesByDest.keySet()) {
+            List<ProvEdge> edges = current.edgesByDest.get(key);
+            out.collect(new Tuple2<>("global", edges));
         }
         current.clearState();
     }

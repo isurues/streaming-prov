@@ -1,7 +1,7 @@
 package edu.indiana.d2i.hadoop;
 
 import edu.indiana.d2i.hadoop.custom.ProvValue;
-import edu.indiana.d2i.prov.streaming.ProvKafkaProducer;
+import edu.indiana.d2i.prov.streaming.ProvFileWriter;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
-public class HashCountProvKafka {
+public class HashCountProvFile {
 
     public static class HashFinderMapper
             extends Mapper<Object, Text, Text, ProvValue> {
@@ -34,13 +34,13 @@ public class HashCountProvKafka {
                 String inputId = filename + "_" + key.toString();
                 String invocationId = context.getTaskAttemptID().getTaskID().toString() + "_" + inputId;
                 // capture provenance
-                ProvKafkaProducer kafkaProducer = ProvKafkaProducer.getInstance();
-                int partition = ProvKafkaProducer.getPartitionToWrite();
+                ProvFileWriter kafkaProducer = ProvFileWriter.getInstance();
+                int partition = ProvFileWriter.getPartitionToWrite();
                 if (partition < 0)
-                    if ("horizontal".equals(ProvKafkaProducer.getPartitionStrategy()))
+                    if ("horizontal".equals(ProvFileWriter.getPartitionStrategy()))
                         partition = 0;
                     else
-                        partition = count++ % ProvKafkaProducer.getNumberOfPartitions();
+                        partition = count++ % ProvFileWriter.getNumberOfPartitions();
                 kafkaProducer.createAndSendEdge(invocationId, inputId, "used", partition);
 
                 StringTokenizer itr = new StringTokenizer(value.toString());
@@ -78,15 +78,15 @@ public class HashCountProvKafka {
                            Context context) throws IOException, InterruptedException {
             String reduceId = context.getTaskAttemptID().toString() + "_" + key;
 
-            int partition = ProvKafkaProducer.getPartitionToWrite();
+            int partition = ProvFileWriter.getPartitionToWrite();
             if (partition < 0)
-                if ("horizontal".equals(ProvKafkaProducer.getPartitionStrategy()))
+                if ("horizontal".equals(ProvFileWriter.getPartitionStrategy()))
                     partition = reduceId.contains("_m_") ? 1 : 2;
                 else
-                    partition = count++ % ProvKafkaProducer.getNumberOfPartitions();
+                    partition = count++ % ProvFileWriter.getNumberOfPartitions();
 
             List<String> nots = new ArrayList<>();
-            ProvKafkaProducer kafkaProducer = ProvKafkaProducer.getInstance();
+            ProvFileWriter kafkaProducer = ProvFileWriter.getInstance();
             int sum = 0;
             for (ProvValue val : values) {
                 sum += val.getSum().get();
@@ -104,7 +104,7 @@ public class HashCountProvKafka {
 
     public static void main(String[] args) throws Exception {
         long start = System.currentTimeMillis();
-        ProvKafkaProducer.getInstance();
+        ProvFileWriter.getInstance();
         Configuration conf = new Configuration();
 //        conf.set("fs.defaultFS", "hdfs://hadoop-master2:9000");
 //        conf.set("mapreduce.job.tracker", "hadoop-master2:5431");
@@ -120,7 +120,7 @@ public class HashCountProvKafka {
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
         boolean complete = job.waitForCompletion(true);
-        ProvKafkaProducer.getInstance().close();
+        ProvFileWriter.getInstance().close();
         long totalTime = System.currentTimeMillis() - start;
         System.out.println("++++++++++ Job complete time(ms): " + totalTime);
         System.exit(complete ? 0 : 1);

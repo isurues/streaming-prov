@@ -51,7 +51,7 @@ public class ProvState {
         handleNewEdgeGroup(newEdges);
     }
 
-    private void handleNewEdgeGroup(List<ProvEdge> newStreamEdges) {
+    public void handleNewEdgeGroup(List<ProvEdge> newStreamEdges) {
         List<ProvEdge> edgesToDelete = new ArrayList<>();
         List<ProvEdge> edgesToAdd = new ArrayList<>();
         for (ProvEdge newEdge : newStreamEdges) {

@@ -11,9 +11,10 @@ import java.util.*;
 public class ProvReductionTest {
 
     public static void main(String[] args) {
-//        File file = new File("/Users/isuru/research/streaming-prov/flink-consumer/prov.txt");
+//        File file = new File("/Users/isuru/research/streaming-prov/flink-consumer/test1.txt");
 //        File file = new File("/Users/isuru/research/streaming-prov/flink-consumer/src/main/java/edu/indiana/d2i/flink/test/working1.txt");
-        File file = new File("/Users/isuru/research/streaming-prov/flink-consumer/src/main/java/edu/indiana/d2i/flink/test/bug2.txt");
+        File file = new File("/Users/isuru/research/streaming-prov/flink-consumer/src/main/java/edu/indiana/d2i/flink/test/test-global.txt");
+//        File file = new File("/Users/isuru/research/streaming-prov/flink-consumer/src/main/java/edu/indiana/d2i/flink/test/2811-1");
         ObjectMapper mapper = new ObjectMapper();
         ProvState processor = new ProvState();
         try (Scanner scanner = new Scanner(file)) {

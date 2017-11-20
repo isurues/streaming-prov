@@ -30,10 +30,17 @@ public class WordCountProvKafka {
         private int count;
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            String valueString = value.toString();
+            if (valueString == null || "".equals(valueString))
+                return;
+
             FileSplit fileSplit = (FileSplit) context.getInputSplit();
             String filename = fileSplit.getPath().getName();
             String inputId = filename + "_" + key.toString();
             String invocationId = context.getTaskAttemptID().getTaskID().toString() + "_" + inputId;
+
+//            if (inputId.contains("2811"))
+//                System.out.println("######### input id = " + inputId + ", value = " + valueString + ", invocation = " + invocationId);
 
 //            ProvKafkaProducer.getInstance().createEntity(inputId);
 //            ProvKafkaProducer.getInstance().createActivity(invocationId, "map");
@@ -44,11 +51,15 @@ public class WordCountProvKafka {
 //            System.out.println("#### map task, partition = " + partition);
             kafkaProducer.createAndSendEdge(invocationId, inputId, "used", partition);
 
-            StringTokenizer itr = new StringTokenizer(value.toString());
+            StringTokenizer itr = new StringTokenizer(valueString);
             int outCount = 0;
             List<String> nots = new ArrayList<>();
             while (itr.hasMoreTokens()) {
                 String token = itr.nextToken();
+                if (token.contains("\""))
+                    token = token.replace("\"", "");
+                if (token.contains("\\"))
+                    token = token.replace("\\", "");
                 word.set(token);
                 String outputId = inputId + "_out" + outCount++;
                 Text outId = new Text(outputId);

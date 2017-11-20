@@ -21,6 +21,7 @@ public class ProvKafkaProducer {
     private static Properties producerProperties;
     private static int numberOfPartitions;
     private static int partitionToWrite;
+    public int messageCount = 0;
 
     private ProvKafkaProducer() {
         loadPropertiesFromFile();
@@ -33,11 +34,13 @@ public class ProvKafkaProducer {
         Properties props = new Properties();
 //        props.put("bootstrap.servers", "localhost:9092");
         props.put("bootstrap.servers", producerProperties.getProperty("bootstrap.servers"));
-        props.put("acks", "all");
-        props.put("retries", 0);
-        props.put("batch.size", 16384);
-        props.put("linger.ms", 1);
-        props.put("buffer.memory", 33554432);
+//        props.put("acks", "all");
+//        props.put("retries", 0);
+//        props.put("batch.size", 16384);
+        props.put("batch.size", 50000); // in bytes
+//        props.put("linger.ms", 1);
+//        props.put("buffer.memory", 33554432);
+        props.put("buffer.memory", 1000000000);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 //        props.put("key.serializer", "org.apache.kafka.connect.json.JsonConverter");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
@@ -112,6 +115,8 @@ public class ProvKafkaProducer {
                 destId + "\", \"edgeType\":\"" + edgeType + "\", \"partition\":\"" + partition + "\"}";
 //        ObjectMapper objectMapper = new ObjectMapper();
 //        JsonNode jsonNode = objectMapper.valueToTree(notification);
+//        check(notification);
+//        count();
         kafkaProducer.send(new ProducerRecord<>(kafkaTopic, partition, "line", notification));
 //        kafkaProducer.send(new ProducerRecord<String, JsonNode>(kafkaTopic, jsonNode));
     }
@@ -122,9 +127,11 @@ public class ProvKafkaProducer {
     }
 
     public void createAndSendJSONArray(List<String> notifications, String edgeType, int partition) {
-        if (notifications.size() == 1)
+        if (notifications.size() == 1) {
+//            check(notifications.get(0));
+//            count();
             kafkaProducer.send(new ProducerRecord<>(kafkaTopic, partition, "line", notifications.get(0)));
-        else if (notifications.size() > 1) {
+        } else if (notifications.size() > 1) {
             StringBuilder array = new StringBuilder("{\"group\":[");
             for (int i = 0; i < notifications.size(); i++) {
                 array.append(notifications.get(i));
@@ -133,8 +140,21 @@ public class ProvKafkaProducer {
             }
             array.append("], \"edgeType\":\"").append(edgeType)
                     .append("\", \"partition\":\"").append(partition).append("\"}");
-            kafkaProducer.send(new ProducerRecord<>(kafkaTopic, partition, "line", array.toString()));
+            String notification = array.toString();
+//            check(notification);
+//            count();
+            kafkaProducer.send(new ProducerRecord<>(kafkaTopic, partition, "line", notification));
         }
     }
+
+//    private void count() {
+//        if (++messageCount % 5000 == 0)
+//            System.out.println("@@>>> message count = " + messageCount);
+//    }
+
+//    private void check(String notification) {
+//        if (notification.contains("2811"))
+//            System.out.println("###@@@@### 2811 notification = " + notification);
+//    }
 
 }

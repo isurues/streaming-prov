@@ -11,7 +11,7 @@ import org.apache.flink.util.Collector;
 
 import java.util.List;
 
-public class KeyedGlobalReducer extends ProcessFunction<Tuple2<String, ProvEdge>, ProvEdge> {
+public class KeyedGroupGlobalReducer extends ProcessFunction<Tuple2<String, List<ProvEdge>>, ProvEdge> {
 
     private ValueState<ProvState> state;
     private static final int TIMER_INTERVAL_MS = Integer.parseInt(KeyedProvStreamConsumer.fileProps.getProperty("global.timer.interval"));
@@ -24,11 +24,8 @@ public class KeyedGlobalReducer extends ProcessFunction<Tuple2<String, ProvEdge>
     }
 
     @Override
-    public void processElement(Tuple2<String, ProvEdge> in, Context context,
+    public void processElement(Tuple2<String, List<ProvEdge>> in, Context context,
                                Collector<ProvEdge> out) throws Exception {
-//        System.out.println(getRuntimeContext().getTaskNameWithSubtasks() + ", " +
-//                getRuntimeContext().getIndexOfThisSubtask() + ", " + in.f0 + " : " + in.f1.toString());
-
         ProvState current = state.value();
         if (current == null) {
             current = new ProvState();
@@ -36,7 +33,7 @@ public class KeyedGlobalReducer extends ProcessFunction<Tuple2<String, ProvEdge>
         }
 
         current.count++;
-        current.handleNewEdge(in.f1);
+        current.handleNewEdgeGroup(in.f1);
         state.update(current);
 
         current.lastModified = System.currentTimeMillis();
@@ -56,8 +53,11 @@ public class KeyedGlobalReducer extends ProcessFunction<Tuple2<String, ProvEdge>
             for (String key : current.edgesBySource.keySet()) {
                 List<ProvEdge> edges = current.edgesBySource.get(key);
                 for (ProvEdge e : edges) {
-                    if (e.toString().contains("2811"))
-                        System.out.println(getRuntimeContext().getIndexOfThisSubtask() + ":2811 global ---> " + e.toJSONString());
+                    String source = e.getSource();
+                    if (source.startsWith("task_") && source.contains("_m_"))
+                        continue;
+//                    if (e.toString().contains("2811"))
+//                        System.out.println(getRuntimeContext().getIndexOfThisSubtask() + ":2811 global ---> " + e.toJSONString());
                     out.collect(e);
                 }
             }
