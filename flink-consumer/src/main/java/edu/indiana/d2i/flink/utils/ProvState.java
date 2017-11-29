@@ -11,6 +11,14 @@ public class ProvState {
     public String key;
     public long count;
     public long lastModified;
+    public boolean started = false;
+    public long numBytes;
+    public long startTime;
+    public long startMemory;
+    public long maxMemFootprint = 0;
+//    public Set<String> nodes = new HashSet<>();
+    public int edgeCount = 0;
+    public int filteredEdgeCount = 0;
     public Map<String, List<ProvEdge>> edgesBySource = new HashMap<>();
     public Map<String, List<ProvEdge>> edgesByDest = new HashMap<>();
 
@@ -78,12 +86,12 @@ public class ProvState {
             deleteEdge(e);
     }
 
-    private void addEdge(ProvEdge edge) {
+    void addEdge(ProvEdge edge) {
         addToMap(edgesBySource, edge, edge.getSource());
         addToMap(edgesByDest, edge, edge.getDestination());
     }
 
-    private void deleteEdge(ProvEdge edge) {
+    void deleteEdge(ProvEdge edge) {
         removeFromMap(edgesBySource, edge, edge.getSource());
         removeFromMap(edgesByDest, edge, edge.getDestination());
     }
@@ -94,7 +102,8 @@ public class ProvState {
             edgesForKey = new ArrayList<>();
             edgeMap.put(key, edgesForKey);
         }
-        edgesForKey.add(edge);
+        if (!edgesForKey.contains(edge))
+            edgesForKey.add(edge);
     }
 
     private void removeFromMap(Map<String, List<ProvEdge>> edgeMap, ProvEdge edge, String key) {

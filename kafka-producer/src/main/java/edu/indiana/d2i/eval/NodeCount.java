@@ -19,7 +19,9 @@ public class NodeCount {
             String nodeId2;
             Set<String> nodes = new HashSet<>();
             int edgeCount = 0;
+            int byteCount = 0;
             while ((line = bufferedReader.readLine()) != null) {
+                byteCount += line.getBytes().length;
                 nodeId1 = line.substring(1, line.indexOf(',')).trim();
                 nodeId2 = line.substring(line.indexOf(',') + 1, line.length() - 1).trim();
                 nodes.add(nodeId1);
@@ -28,6 +30,7 @@ public class NodeCount {
             }
             System.out.println("Number of nodes = " + nodes.size());
             System.out.println("Number of edges = " + edgeCount);
+            System.out.println("Size = " + byteCount);
             fileReader.close();
         } catch (IOException e) {
             e.printStackTrace();

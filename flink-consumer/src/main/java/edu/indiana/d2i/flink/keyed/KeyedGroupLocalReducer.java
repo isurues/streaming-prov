@@ -35,8 +35,13 @@ public class KeyedGroupLocalReducer extends ProcessFunction<Tuple2<String, Objec
             current.key = in.f0;
         }
 
+        if (!current.started) {
+            current.startTime = System.currentTimeMillis();
+            current.started = true;
+        }
         current.count++;
         current.processNotification(in.f1);
+        current.numBytes += in.f1.toString().getBytes().length;
         state.update(current);
         // emit on count, may be experiment with a time period too?
         if (current.count == LOCAL_LIMIT) {
@@ -56,16 +61,62 @@ public class KeyedGroupLocalReducer extends ProcessFunction<Tuple2<String, Objec
         // check if this is an outdated timer or the latest timer
         if (timestamp == current.lastModified + TIMER_INTERVAL_MS) {
             System.out.println(current.key + ": timer: emitting grouped local results...");
+            long time = current.lastModified - current.startTime;
+            float mb = (float) current.numBytes / 1000000;
+            float throughput = (float) current.numBytes / (1000 * time);
             emitGroupedState(current, out);
+            System.out.println(current.key + ": timer: edges = " + current.edgeCount + " filtered = " +
+                    current.filteredEdgeCount + " throughput = " + throughput + "MB/s, Size = " + mb + "MB, time = " + time + "ms");
         }
     }
 
     private void emitGroupedState(ProvState current, Collector<Tuple2<String, List<ProvEdge>>> out) {
-        for (String key : current.edgesByDest.keySet()) {
-            List<ProvEdge> edges = current.edgesByDest.get(key);
+        for (String key : current.edgesBySource.keySet()) {
+            List<ProvEdge> edges = current.edgesBySource.get(key);
+            if (key.startsWith("task_") && key.contains("_m_")) {
+                current.filteredEdgeCount += edges.size();
+                continue;
+            }
+            current.edgeCount += edges.size();
             out.collect(new Tuple2<>("global", edges));
         }
         current.clearState();
     }
+
+//    private void emitGroupedState(ProvState current, Collector<Tuple2<String, List<ProvEdge>>> out) {
+//        for (String key : current.edgesByDest.keySet()) {
+//            List<ProvEdge> edges = current.edgesByDest.get(key);
+////            for (ProvEdge e : edges) {
+////                current.nodes.add(e.getSource());
+////                current.nodes.add(e.getDestination());
+////            }
+//            current.edgeCount += edges.size();
+//            out.collect(new Tuple2<>("global", edges));
+//        }
+//        current.clearState();
+//    }
+
+//    private void emitGroupedState(ProvState current, Collector<Tuple2<String, List<ProvEdge>>> out) {
+//        for (String key : current.edgesByDest.keySet()) {
+//            List<ProvEdge> edges = current.edgesByDest.get(key);
+//            StringBuilder group = new StringBuilder();
+//            group.append("{\"group\":[");
+//            for (ProvEdge e : edges) {
+//                current.nodes.add(e.getSource());
+//                current.nodes.add(e.getDestination());
+//                if (edges.size() == 1)
+//                    System.out.println(current.key + ": " + e.toJSONString());
+//                else
+//                    group.append(e.toJSONString()).append(", ");
+//            }
+//            group.append("]}");
+//            if (edges.size() > 1)
+//                System.out.println(current.key + ": " + group.toString());
+//            current.edgeCount += edges.size();
+//            out.collect(new Tuple2<>("global", edges));
+//        }
+//        current.clearState();
+//    }
+
 
 }

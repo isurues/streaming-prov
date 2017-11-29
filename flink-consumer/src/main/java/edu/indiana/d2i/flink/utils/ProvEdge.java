@@ -31,6 +31,14 @@ public class ProvEdge {
         return "<" + source + ", " + destination + ">";
     }
 
+    public boolean equals(Object obj) {
+        if (obj instanceof ProvEdge) {
+            ProvEdge edge = (ProvEdge) obj;
+            return edge.toString().equals(this.toString());
+        } else
+            return false;
+    }
+
     public String toJSONString() {
         return "{\"sourceId\":\"" + source + "\", \"destId\":\"" + destination + "\"}";
     }

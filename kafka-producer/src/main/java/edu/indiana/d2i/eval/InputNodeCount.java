@@ -14,7 +14,7 @@ public class InputNodeCount {
 
     public static void main(String[] args) {
         try {
-            File file = new File("/Users/isuru/Desktop/ccgrid-2018/experiments/mr-prov-16m");
+            File file = new File("/Users/isuru/Desktop/ccgrid-2018/experiments/mr-prov");
             FileReader fileReader = new FileReader(file);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
             ObjectMapper objectMapper = new ObjectMapper();
